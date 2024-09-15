@@ -1,0 +1,82 @@
+#!/bin/bash
+
+IdictFile="/home/hlajungo/hipac3DataAll/hipac3data/hash/dict"
+IhashesFile="/home/hlajungo/hipac3DataAll/hipac3data/hash/question.txt"
+IpackDir="/home/hlajungo/hipac3DataAll/hipac3data/hash/myTestSpace/new/pack-master"
+rootDir="/home/hlajungo/hipac3DataAll/hipac3data/hash/myTestSpace/new/hashCracker"
+DICT_MIN_LENGTH=1    #[1,inf]
+
+
+dictDir="$rootDir/dict"
+ruleDir="$rootDir/rule"
+tempDir="$rootDir/temp"
+dataDir="$rootDir/data"
+scriptDir="$rootDir/script"
+
+splitHashDir="$tempDir/splitHash"
+
+md5File="$splitHashDir/md5_hashes.txt"
+md5cryptFile="$splitHashDir/md5crypt_hashes.txt"
+bcryptFile="$splitHashDir/bcrypt_hashes.txt"
+
+
+resultDir="$tempDir/result"
+md5ResultFile="$resultDir/md5Result.txt" #the file must be existed
+touch $md5ResultFile
+md5cryptResultFile="$resultDir/md5cryptResult.txt"
+touch $md5cryptResultFile
+
+restoreDir="$tempDir/restore"
+
+maskFile="$tempDir/temp.masks"
+potFile="$tempDir/temp.pot"
+touch $potFile
+tempDictFile="$tempDir/temp.dict"
+
+
+outputFile="$rootDir/output.txt"
+
+#mkdir -p "$tempDir"
+#mkdir -p "$dataDir"
+#mkdir -p "$scriptDir"
+#mkdir -p "$splitDictDir"
+#mkdir -p "$splitHashDir"
+#mkdir -p "$resultDir"
+#mkdir -p "$restoreDir"
+
+
+: <<'END_COMMENT'
+--restore-file-path
+
+
+--session                  | Str  | Define specific session name                         | --session=mysession
+     --restore                  |      | Restore session from --session                       |
+     --restore-disable          |      | Do not write restore file                            |
+     --restore-file-path        | File | Specific path to restore file                        | --restore-file-path=x.restore
+ -o, --outfile                  | File | Define outfile for recovered hash                    | -o outfile.txt
+     --outfile-format           | Str  | Outfile format to use, separated with commas         | --outfile-format=1,3
+     --outfile-check-timer      | Num  | Sets seconds between outfile checks to X             | --outfile-check-timer=30
+hashcat --session=mySessionName ...
+hashcat --restore-file-path=/p/t/f --session=mySessionName --restore
+
+     --progress-only            |      | Return ideal progress step size and time to process  |
+     --cpu-affinity             | Str  | Locks to CPU devices, separated with commas          | --cpu-affinity=1,2,3
+-i, --increment                |      | Enable mask increment mode                           |
+     --increment-min            | Num  | Start mask incrementing at X                         | --increment-min=4
+     --increment-max            | Num  | Stop mask incrementing at X                          | --increment-max=8
+
+
+     --brain-server             |      | Enable brain server                                  |
+     --brain-server-timer       | Num  | Update the brain server dump each X seconds (min:60) | --brain-server-timer=300
+ -z, --brain-client             |      | Enable brain client, activates -S                    |
+     --brain-client-features    | Num  | Define brain client features, see below              | --brain-client-features=3
+     --brain-host               | Str  | Brain server host (IP or domain)                     | --brain-host=127.0.0.1
+     --brain-port               | Port | Brain server port                                    | --brain-port=13743
+     --brain-password           | Str  | Brain server authentication password                 | --brain-password=bZfhCvGUSjRq
+     --brain-session            | Hex  | Overrides automatically calculated brain session     | --brain-session=0x2ae611db
+     --brain-session-whitelist  | Hex  | Allow given sessions only, separated with commas     | --brain-session-whitelist=0x2ae611d
+
+
+     A runner ,take user input, and do the task that input say. 
+END_COMMENT
+
