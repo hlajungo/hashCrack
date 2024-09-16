@@ -1,48 +1,58 @@
 #!/bin/bash
 
-IdictFile="/home/hlajungo/hipac3DataAll/hipac3data/hash/dict"
-IhashesFile="/home/hlajungo/hipac3DataAll/hipac3data/hash/question.txt"
+IdictDir=(
+"/media/hlajungo/D/linux/dict/SecLists-master"
+)
+
+IhashesFile="../hash/question.txt"
+
 IpackDir="/home/hlajungo/hipac3DataAll/hipac3data/hash/myTestSpace/new/pack-master"
-rootDir="/home/hlajungo/hipac3DataAll/hipac3data/hash/myTestSpace/new/hashCracker"
+
 DICT_MIN_LENGTH=1    #[1,inf]
 
+IruleDir=(
+"$rootDir/rule"
+)
 
-dictDir="$rootDir/dict"
-ruleDir="$rootDir/rule"
-tempDir="$rootDir/temp"
+
+rootDir="$(dirname "$(realpath "$0")")"
+
+
 dataDir="$rootDir/data"
+mkdir -p "$dataDir"
 scriptDir="$rootDir/script"
+mkdir -p "$scriptDir"
 
+outputFile="$rootDir/output.txt"
+touch "$outputFile"
+tempDir="$rootDir/temp"
+mkdir -p "$tempDir"
 splitHashDir="$tempDir/splitHash"
-
-md5File="$splitHashDir/md5_hashes.txt"
-md5cryptFile="$splitHashDir/md5crypt_hashes.txt"
-bcryptFile="$splitHashDir/bcrypt_hashes.txt"
-
-
+mkdir -p "$splitHashDir"
 resultDir="$tempDir/result"
-md5ResultFile="$resultDir/md5Result.txt" #the file must be existed
-touch $md5ResultFile
-md5cryptResultFile="$resultDir/md5cryptResult.txt"
-touch $md5cryptResultFile
-
+mkdir -p "$resultDir"
 restoreDir="$tempDir/restore"
+mkdir -p "$restoreDir"
+
 
 maskFile="$tempDir/temp.masks"
 potFile="$tempDir/temp.pot"
-touch $potFile
-tempDictFile="$tempDir/temp.dict"
 
 
-outputFile="$rootDir/output.txt"
+md5File="$splitHashDir/md5Hashes.txt"
+md5ResultFile="$resultDir/md5Result.txt" #the file must be existed
 
-#mkdir -p "$tempDir"
-#mkdir -p "$dataDir"
-#mkdir -p "$scriptDir"
-#mkdir -p "$splitDictDir"
-#mkdir -p "$splitHashDir"
-#mkdir -p "$resultDir"
-#mkdir -p "$restoreDir"
+md5cryptFile="$splitHashDir/md5cryptHashes.txt"
+md5cryptResultFile="$resultDir/md5cryptResult.txt"
+
+
+bcryptFile="$splitHashDir/bcryptHashes.txt"
+bcryptFile="$splitHashDir/bcrypthashesResult.txt"
+
+
+
+
+
 
 
 : <<'END_COMMENT'
