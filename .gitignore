@@ -1,5 +1,9 @@
-temp/
-obj/
-data/
-output.txt
+/*
 
+!bin
+!config
+!makefile
+!pack-master
+!README.md
+!script
+!src
