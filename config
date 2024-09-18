@@ -1,30 +1,39 @@
 #!/bin/bash
 
-IdictDir=(
-"/media/hlajungo/D/linux/dict/SecLists-master"
-)
-
 IhashesFile="../hash/question.txt"
 
-IpackDir="/home/hlajungo/hipac3DataAll/hipac3data/hash/myTestSpace/new/pack-master"
 
-DICT_MIN_LENGTH=1    #[1,inf]
+IdictDir=(
+"/media/hlajungo/D/linux/dict/SecLists-master"
+"/media/hlajungo/D/linux/dict/crackstation.txt"
+)
+DICT_MIN_LENGTH=9    #[1,inf]
 
+
+# the rule that will be used to create dict
 IruleDir=(
-"$rootDir/rule"
+"/media/hlajungo/D/linux/rule/best64.rule"
 )
 
+# the dict that will be used to create rule
+ruleGenerateTargetDictFile=(
+)
 
-rootDir="$(dirname "$(realpath "$0")")"
+#current_time=$(date +"%Y%m%d%H%M")
+
+NUM_CORES=$(nproc)
+PARALLEL_JOBS=$(( NUM_CORES * 3 / 4 ))
 
 
-dataDir="$rootDir/data"
-mkdir -p "$dataDir"
-scriptDir="$rootDir/script"
-mkdir -p "$scriptDir"
+rootDir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+IpackDir="$rootDir/pack-master"
 
 outputFile="$rootDir/output.txt"
 touch "$outputFile"
+scriptDir="$rootDir/script"
+mkdir -p "$scriptDir"
+binDir="$rootDir/bin"
+mkdir -p "$binDir"
 tempDir="$rootDir/temp"
 mkdir -p "$tempDir"
 splitHashDir="$tempDir/splitHash"
@@ -33,22 +42,42 @@ resultDir="$tempDir/result"
 mkdir -p "$resultDir"
 restoreDir="$tempDir/restore"
 mkdir -p "$restoreDir"
+dataDir="$rootDir/data"
+mkdir -p "$dataDir"
 
+
+
+dictDir="$tempDir/dict"
+mkdir -p $dictDir
+dictNameFile="$dictDir/dictName.txt"
+touch $dictNameFile
+dictWorkerName="$dictDir/worker_"
+dictFile="$dictDir/resultDict.word"
+touch $dictFile
+
+ruleDir="$tempDir/rule"
+mkdir -p $ruleDir
+ruleFile="$ruleDir/resultRule.rule"
+touch "$ruleFile"
+
+preProcessedDict="$tempDir/preProcessedDict.word"
 
 maskFile="$tempDir/temp.masks"
 potFile="$tempDir/temp.pot"
 
-
 md5File="$splitHashDir/md5Hashes.txt"
 md5ResultFile="$resultDir/md5Result.txt" #the file must be existed
+md5DataFile="${dataDir}/md5Data.txt"
+ruleGenerateTargetDictFile+=("$md5DataFile")
 
 md5cryptFile="$splitHashDir/md5cryptHashes.txt"
 md5cryptResultFile="$resultDir/md5cryptResult.txt"
+md5cryptDataFile="${dataDir}/md5cryptData.txt"
 
 
 bcryptFile="$splitHashDir/bcryptHashes.txt"
-bcryptFile="$splitHashDir/bcrypthashesResult.txt"
-
+bcryptFile="$splitHashDir/bcryptResult.txt"
+bcryptDataFile="${dataDir}/bcryptData.txt"
 
 
 

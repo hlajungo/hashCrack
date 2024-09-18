@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_DIR="$(dirname "$(realpath "$0")")"
+SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 source "$SCRIPT_DIR/../config"
 
 echo "$(basename "$0") working start"

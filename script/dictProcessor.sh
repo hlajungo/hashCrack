@@ -1,53 +1,166 @@
 #!/bin/bash
 
-# 1. 定義包含多個字典目錄的數組
-directories=(
-  "/path/to/dict1"
-  "/path/to/dict2"
-  "/path/to/dict3"
-  # 可以繼續添加更多的目錄
-)
+SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+source "$SCRIPT_DIR/../config"
 
-# 2. 檢查所有目錄是否存在
-for dir in "${directories[@]}"; do
-  if [ ! -d "$dir" ]; then
-    echo "錯誤：目錄 '$dir' 不存在！"
-    exit 1  # 退出腳本，返回錯誤代碼 1
+function ctrl_c() {
+    echo "Ctrl+C detected."
+    rm "${dictFile}.tmp"
+
+    for file in "${dictWorkerFileArray[@]}"; do
+        tmpFile="${file}.tmp"
+        rm $tmpFile $file
+    done
+
+    rm "${preProcessedDict}Split_"*
+
+    exit 1
+}
+
+trap ctrl_c SIGINT
+
+#check user input dictDir is correct
+for dir in "${IdictDir[@]}"; do
+  if [[ ! -d "$dir" && ! -f "$dir" ]]; then
+    echo "[Error]: $0 $dir doesn't exist."
+    exit 1
   fi
 done
 
-# 3. 創建一個臨時文件來存放所有 .txt 文件的路徑
-txt_files="/tmp/all_txt_files.txt"
-> "$txt_files"  # 清空文件以確保它是空的
+echo "$(basename "$0") working start."
 
-# 4. 遍歷每個目錄，查找 .txt 文件並將其絕對路徑寫入臨時文件
-for dir in "${directories[@]}"; do
-  find "$dir" -type f -name "*.txt" | xargs realpath >> "$txt_files"
+> "$dictNameFile"
+for dir in "${IdictDir[@]}"; do
+    echo "Using $dir"
+    find "$dir" -type f -name "*.txt" >> "$dictNameFile"
+    find "$dir" -type f -name "*.word" >> "$dictNameFile"
 done
 
-# 5. 將文件分配給 10 個工作者，並行處理
-split -n l/10 "$txt_files" /tmp/worker_  # 將所有 txt 文件按行分為 10 份
+#all txt file in $dictNameFile
+echo "exec $(wc -l < "$dictNameFile") word files."
+
+#get length file by file
+>"${dictNameFile}Length"
+while IFS= read -r file; do
+    wc -l "$file" >> "${dictNameFile}Length"
+done < "$dictNameFile"
 
 
-for i in {a..j}; do
-  {
-    # 將 worker_a, worker_b, ... worker_j 中的文件合併成 dict1.txt ~ dict10.txt
-    while read -r file; do
 
-awk -v min_length="$DICT_MIN_LENGTH" 'length($0) >= min_length' "$tempDictFile" | sort -u > "${tempDictFile}.tmp"
-cat "$file" >> "dict$((10#${i}))".txt
-    done < "/tmp/worker_$i"
-
-    echo "Worker $i 完成了 dict$((10#${i})).txt"
-  } &
+echo "distributing task to worker thread."
+#create worker thread
+dictWorkerFileArray=()
+for i in $(seq -w 1 "$PARALLEL_JOBS"); do
+    >"${dictWorkerName}${i}"
+    dictWorkerFileArray+=("${dictWorkerName}${i}")
 done
 
-# 6. 等待所有工作者完成
-wait
+tempArray=(0 0 0 0 0 0 0 0 0 0
+           0 0 0 0 0 0 0 0 0 0
+           0 0 0 0 0 0 0 0 0 0
+           0 0 0 0 0 0 0 0 0 0
+           0 0 0 0 0 0 0 0 0 0
+           0 0 0 0 0 0 0 0 0 0
+           0 0 0 0 0 0 0 0 0 0
+           0 0 0 0 0 0 0 0 0 0
+           0 0 0 0 0 0 0 0 0 0
+           0 0 0 0 0 0 0 0 0 0)
 
-# 7. 清理臨時的 worker 和 txt 文件
-rm /tmp/worker_* "$txt_files"
+while IFS= read -r file; do
+    value=$(echo "$file" | cut -d ' ' -f 1)
+    realFile=$(echo "$file" | cut -d ' ' -f 2)
+    minValue=${tempArray[0]}   # 設置最小值
+    minIndex=0                 # 設置最小值的索引
+    for ((i=0; i<${#dictWorkerFileArray[@]}; i++)); do
+        if (( tempArray[$i] <= minValue )); then
+            minValue=${tempArray[$i]}
+            minIndex=$i
+        fi
+    done
 
-echo "所有工作者已完成，文件合併完畢。"
+    echo "$realFile" >> "${dictWorkerFileArray[$minIndex]}"
+    tempArray[$minIndex]=$((tempArray[minIndex] + value))
+done < "${dictNameFile}Length"
+rm "${dictNameFile}Length"
+
+#tell user each thread txt file
+echo -n "split files into"
+for i in "${dictWorkerFileArray[@]}"
+do
+   echo -n " $(wc -l < "$i")"
+done
+    echo -ne ".\n"
+
+
+echo "merging file parallelly."
+
+process_file() {
+    file="$1"
+    tmpFile="${file}.tmp"
+    tmpFile2="${file}.tmp2"
+
+    >"$tmpFile"
+    >"$tmpFile2"
+    while IFS= read -r dictFileName; do
+        cat $dictFileName >> "$tmpFile2"
+        grep -E '^[0-9a-zA-Z]{5,}$' "$tmpFile2" >> "$tmpFile"
+    done < "$file"
+
+    echo "file merge thread $(basename $file) finished."
+}
+
+export -f process_file
+
+
+parallel process_file ::: "${dictWorkerFileArray[@]}"
+
+echo "merging all word file to $dictFile"
+
+
+# merge file
+> "$dictFile"
+for file in "${dictWorkerFileArray[@]}"; do
+    tmpFile="${file}.tmp"
+    cat "$tmpFile" >> "$dictFile"
+    rm $tmpFile $file
+done
+
+echo "sorting $(basename $dictFile)"
+sort --parallel="$PARALLEL_JOBS" -S 50% -u "$dictFile" > "${dictFile}.tmp"
+mv "${dictFile}.tmp" "$dictFile"
+
+
+${scriptDir}/ruleMerger.sh
+echo "preproceeding rule x dict"
+
+hashcat --stdout -r "$ruleFile" "$dictFile" > "$preProcessedDict"
+
+echo "$(basename "$0") working done."
+exit 0
+
+echo "exclude the word < $DICT_MIN_LENGTH"
+
+tmp2="$preProcessedDict.tmp"
+tmp3="$preProcessedDict.tmp2"
+
+split -l 200000000 -d "$preProcessedDict" "${preProcessedDict}Part"
+
+preProcessedDictArray=("${preProcessedDict}Part"*)
+
+for file in "${preProcessedDictArray[@]}"; do
+  > "$tmp2"
+  "$binDir/dictFliter.bin" "$file" "$tmp2" "$DICT_MIN_LENGTH"
+  cat "$tmp2" >> "$tmp3"
+done
+
+mv "$tmp3" "$preProcessedDict"
+rm "$tmp2"
+
+
+
+
+echo "there are $(wc -l < "$preProcessedDict") words in ${preProcessedDict}"
+
+
 
 

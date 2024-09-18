@@ -1,5 +1,5 @@
 #!/bin/bash
-SCRIPT_DIR="$(dirname "$(realpath "$0")")"
+SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 source "$SCRIPT_DIR/../config"
 
     #python2 statsgen.py $file -o temp.masks
@@ -12,7 +12,7 @@ source "$SCRIPT_DIR/../config"
 
 
 
-controller="999"
+controller="0"
 case $controller in
     "3")#brute force and mask
     hashcat -a 3 -m 0 \
@@ -28,33 +28,33 @@ case $controller in
     -w 3 -O \
     --session=md5session1 --restore-file-path="$restoreDir/md5session1" \
     -o $md5ResultFile --outfile-format=1,2,6 --outfile-check-timer=30 --potfile-path="$potFile" \
-    -r "/home/hlajungo/hipac3DataAll/hipac3data/hash/myTestSpace/new/hashCracker/rule/best64.rule" \
     $md5File \
-    "$tempDictFile"
+    "$preProcessedDict"
 
         ;;
     "6")#dict+mask
-
+    hashcat --stdout -r "/media/hlajungo/D/linux/rule/best64.rule" "$dictFile" > processed_dictionary.txt
         ;;
     "7")#mask+dict
-
         ;;
     *)
         echo "Error: $(basename "$0") :Unknown controller type."
         ;;
 esac
 
-# add to data , rempve the same ,order by length of line
-cat $md5ResultFile >> "${dataDir}/md5Result.txt"
-sort -u "${dataDir}/md5Result.txt" > "${dataDir}/md5Result.tmp"
-awk '{ print length, $0 }' "${dataDir}/md5Result.tmp" | sort -n | cut -d ' ' -f2- > "${dataDir}/md5Result.tmp2"
-mv "${dataDir}/md5Result.tmp2" "${dataDir}/md5Result.txt"
+# rempve the same
+cat $md5ResultFile >> "$md5DataFile"
+cut -f2,3 -d ":" "$md5DataFile" > "${md5DataFile}.tmp2" #tmp2 1:2:3 -> 2:3
+cut -f1 -d ":" "$md5DataFile" > "${md5DataFile}.tmp3" #tmp3 1:2:3 -> 1
+awk '!seen[$0]++ { print } seen[$0] == 2 { print "PLACEHOLDER_ROW" }' "$md5DataFile.tmp2" > "${md5DataFile}.tmp" #tmp 2:3 with place holder
+paste -d ":" "$md5DataFile.tmp3" "$md5DataFile.tmp" > "$md5DataFile.tmp4"
+grep -v "PLACEHOLDER_ROW" "$md5DataFile.tmp4" > "$md5DataFile"
 
-
+rm "$md5DataFile.tmp"*
 
     #--increment --increment-min=1 --increment-max=20 
 
-
+#--runtime
 
 # hashcat --restore --session=md5session1 --restore-file-path="temp/restore/md5session1"
 
