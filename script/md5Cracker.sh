@@ -2,16 +2,6 @@
 SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 source "$SCRIPT_DIR/../config"
 
-    #python2 statsgen.py $file -o temp.masks
-    #python2 maskgen.py temp.masks --targettime 1200
-
-    #-a 6 == mask+dict
-    #-a 3 == mask
-
-    #hashcat -a 3 -m 0 -w 3 -O -o $resultFile  --increment --increment-min=1 --increment-max=15 $hashes_file ?1?1?1?1?1?1?1?1?1?1?1?1?1?1?1 -1 ?l?d
-
-
-
 controller="0"
 case $controller in
     "3")#brute force and mask
@@ -52,9 +42,4 @@ grep -v "PLACEHOLDER_ROW" "$md5DataFile.tmp4" > "$md5DataFile"
 
 rm "$md5DataFile.tmp"*
 
-    #--increment --increment-min=1 --increment-max=20 
-
 #--runtime
-
-# hashcat --restore --session=md5session1 --restore-file-path="temp/restore/md5session1"
-
