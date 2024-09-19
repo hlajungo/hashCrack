@@ -5,5 +5,6 @@
 !makefile
 !pack-master
 !README.md
-!script
 !src
+!configScript
+!coreScript
