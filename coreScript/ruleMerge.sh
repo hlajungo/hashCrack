@@ -1,25 +1,93 @@
 #!/bin/bash
 
-SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
-source "$SCRIPT_DIR/../config"
+debug() {
+    if [ "$DEBUG" -eq 1 ]; then
+        echo "DEBUG: $*"
+    fi
+}
 
-echo "$(basename "$0") working start"
+showVersion() {
+	echo "$(basename "$0") 1.0"
+}
 
-for dir in "${IruleDir[@]}"; do
+showHelp() {
+    local outputStream=$1
+eval echo "" $outputStream
+eval echo "Merge input file and remove duplicates, if input is a dir, all file under it will be use " $outputStream
+eval echo "" $outputStream
+eval echo "Usage: $(basename "$0") [options]... file1 file2 dir1 dir2 ... > outputfile" $outputStream
+eval echo "" $outputStream
+eval echo "Options:" $outputStream
+eval echo "  -v, --version    Show version" $outputStream
+eval echo "  -h, --help       Show help" $outputStream
+eval echo "  -p, --parallel=N   Set parallel core number" $outputStream
+eval echo "" $outputStream
+}
+
+# arguments setting
+ARGS=$(getopt -o \
+hv\
+p:\
+\
+ --long \
+help,version,\
+parallel:\
+\
+ -n $(basename "$0") -- "$@")
+
+eval set -- "$ARGS"
+
+while true; do
+	case "$1" in
+	-h | --help)
+		showHelp
+		exit 0
+		;;
+	-v | --version)
+		showVersion
+		exit 0
+		;;
+  -p | --parallel)
+    CORE_NUM="$2"
+    shift 2
+    ;;
+	--)
+		shift
+		break
+		;;
+	*)
+		echo "Internal error!" >&2
+		exit 1
+		;;
+	esac
+done
+
+if [[ -z "$1" ]]; then
+	showHelp ">&2"
+	exit 1
+fi
+
+for dir in "$@"; do
   if [[ ! -d "$dir" && ! -f "$dir" ]]; then
-    echo "[Error]: $0 $dir doesn't exist."
+    echo "[Error]: $0 $dir doesn't exist." >&2
     exit 1
   fi
 done
 
-for dir in "${IruleDir[@]}"; do
-    echo "Using $dir"
-    find "$dir" -type f -name "*.rule" -exec cat {} >> "$ruleFile" \;
+## Starting script
+
+tmpFile="$(basename "$0").tmp"
+for dir in "$@"; do
+  find "$dir" -type f -exec cat {} + >> "$tmpFile"
 done
 
-sort --parallel="$PARALLEL_JOBS" -S 50% -u "$ruleFile" > "$ruleFile.tmp" && mv "$ruleFile.tmp" "$ruleFile"
+sort --parallel="${CORE_NUM:-1}" -S 50% -u "$tmpFile" > "$tmpFile.tmp"
 
-echo "have $(wc -l <$ruleFile) rules in  $ruleFile ."
+cat "$tmpFile.tmp"
 
-echo "$(basename "$0") working done"
+[ -f "$tmpFile.tmp" ] && rm "$tmpFile.tmp"
+[ -f "$tmpFile" ] && rm "$tmpFile"
+
+
+
 

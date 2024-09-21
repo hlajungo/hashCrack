@@ -2,9 +2,10 @@
 
 !bin
 !config
-!makefile
-!pack-master
-!README.md
-!src
 !configScript
 !coreScript
+!makefile
+!output.txt
+!README.md
+!src
+!thirdParty
